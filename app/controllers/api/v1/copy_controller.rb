@@ -11,7 +11,7 @@ class Api::V1::CopyController < ApplicationController
     end
 
     def refresh
-        CopyService.new.fetch_data
+        CopyService.new.load_data
         render json: {value: "data updated successfully"}
     end
 

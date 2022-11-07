@@ -13,7 +13,7 @@ class CopyService
         @params = params
     end
 
-    def fetch_data
+    def load_data
         copy_arr = []
         @copy_table.all.each do |item|
             record = @json_data.find { |copy| copy["key"] == item.fields["Key"] }
