@@ -5,11 +5,12 @@ class CopyService
     ENTITY_NAME = ENV["AIRTABLE_ENTITY_NAME"]
     JSON_FILE = ENV["JSON_FILE"]
 
-    def initialize
+    def initialize(params: nil)
         Airrecord.api_key = API_KEY
         @copy_table = Airrecord.table(API_KEY, APP_KEY, ENTITY_NAME)
         data = JSON.load(File.open JSON_FILE) if File.exists? JSON_FILE
         @json_data = data ? data["records"] : []
+        @params = params
     end
 
     def fetch_data
@@ -34,32 +35,33 @@ class CopyService
         write_json_to_file(copy_json)
     end
 
-    def fetch_data_by_key(copy_params = {})
+    def fetch_data_by_key
         json_data_keys = @json_data.map {|copy| copy["key"]}
-        filtered_copy_data = @json_data.find { |item| item["key"] == copy_params[:key] }
-        copy_param_keys = copy_params.keys
-        copy_param_keys.delete("key")
-        copy_data = filtered_copy_data["copy"] if filtered_copy_data
+        record = @json_data.find { |item| item["key"] == @params[:key] }
+        return {error: "key not found"} unless record.present?
+        copy_param_keys = @params.except(:key).keys
+        copy_str = record["copy"]
         
         for key in json_data_keys
-            if copy_data.include? key
-                filtered_copy_data = @json_data.find { |item| item["key"] == key }
-                copy_data.sub!("{#{key}}", filtered_copy_data["copy"])
+            if copy_str.include? key
+                record = @json_data.find { |item| item["key"] == key }
+                copy_str.sub!("{#{key}}", record["copy"])
             end
         end
 
         for param in copy_param_keys
-            if copy_data.include? param
+            if copy_str.include? param
                 if ["created_at", "updated_at"].include? param
-                    copy_data.sub!("{#{param}, datetime}", copy_params[param])
+                    copy_str.sub!("{#{param}, datetime}", @params[param])
                 end
-                copy_data.sub!("{#{param}}", copy_params[param])
+                copy_str.sub!("{#{param}}", @params[param])
             end
         end
-        copy_data
+        {value: copy_str}
     end
 
-    def fetch_data_by_date(since)
+    def fetch_data_by_date
+        since = @params[:since].to_i if @params[:since].present?
         records = since ? @json_data.filter { |item| item["last_updated"] >= since }  : @json_data
         records.map {|item| {:key => item["key"], :copy => item["copy"]}}
     end

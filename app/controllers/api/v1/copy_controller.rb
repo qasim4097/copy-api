@@ -1,19 +1,18 @@
 class Api::V1::CopyController < ApplicationController
 
     def index
-        since_param = copy_params[:since] ? copy_params[:since].to_i : nil
-        records = CopyService.new.fetch_data_by_date(since_param)
+        records = CopyService.new(params: copy_params).fetch_data_by_date
         render :json => records
     end
 
     def find
-        records = CopyService.new.fetch_data_by_key(copy_params)
-        render :json => {value: records}
+        record = CopyService.new(params: copy_params).fetch_data_by_key
+        render json: record
     end
 
     def refresh
         CopyService.new.fetch_data
-        render :json => {value: "data updated successfully"}
+        render json: {value: "data updated successfully"}
     end
 
     private
