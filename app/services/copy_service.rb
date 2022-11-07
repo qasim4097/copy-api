@@ -61,6 +61,7 @@ class CopyService
 
     def fetch_data_by_date(since)
         records = since ? @json_data.filter { |item| item["last_updated"] >= since }  : @json_data
+        records.map {|item| {:key => item["key"], :copy => item["copy"]}}
     end
 
     private
